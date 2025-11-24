@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { Intercom, show, hide, onHide } from "@intercom/messenger-js-sdk";
 import { observer } from "mobx-react";
 // store hooks
@@ -16,18 +16,26 @@ const IntercomProvider = observer(function IntercomProvider(props: IntercomProvi
   const { data: user } = useUser();
   const { config } = useInstance();
   const { isIntercomToggle, toggleIntercom } = useTransient();
+  const [isIntercomReady, setIsIntercomReady] = useState(false);
+
+  const canInitializeIntercom = Boolean(user && config?.is_intercom_enabled && config.intercom_app_id);
 
   useEffect(() => {
+    if (!isIntercomReady) return;
+
     if (isIntercomToggle) show();
     else hide();
-  }, [isIntercomToggle]);
-
-  onHide(() => {
-    toggleIntercom(false);
-  });
+  }, [isIntercomReady, isIntercomToggle]);
 
   useEffect(() => {
-    if (user && config?.is_intercom_enabled && config.intercom_app_id) {
+    if (!isIntercomReady) return;
+
+    const handleHide = () => toggleIntercom(false);
+    onHide(handleHide);
+  }, [isIntercomReady, toggleIntercom]);
+
+  useEffect(() => {
+    if (canInitializeIntercom) {
       Intercom({
         app_id: config.intercom_app_id || "",
         user_id: user.id,
@@ -35,8 +43,11 @@ const IntercomProvider = observer(function IntercomProvider(props: IntercomProvi
         email: user.email,
         hide_default_launcher: true,
       });
+      setIsIntercomReady(true);
+    } else {
+      setIsIntercomReady(false);
     }
-  }, [user, config, toggleIntercom]);
+  }, [user, config, toggleIntercom, canInitializeIntercom]);
 
   return <>{children}</>;
 });

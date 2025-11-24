@@ -4,7 +4,12 @@ import dotenv from "dotenv";
 import { defineConfig } from "vite";
 import tsconfigPaths from "vite-tsconfig-paths";
 
-dotenv.config({ path: path.resolve(__dirname, ".env") });
+const rootEnvPath = path.resolve(__dirname, "../../.env");
+const webEnvPath = path.resolve(__dirname, ".env");
+
+// Load root level .env first and allow app specific .env to override
+dotenv.config({ path: rootEnvPath });
+dotenv.config({ path: webEnvPath });
 
 // Expose only vars starting with VITE_
 const viteEnv = Object.keys(process.env)
